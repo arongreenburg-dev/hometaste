@@ -12,3 +12,25 @@ test('real response schema: shared ranking, veto, budget and source separation',
 });
 test('invalid inputs and missing configuration fail without calling Qloo',async()=>{assert.equal((await qlooApi(request())).status,503);for(const b of [{budget:0},{budget:Infinity},{people:[]},{focus:'Construction'}])assert.equal((await qlooApi(request(b),'test-key')).status,400)});
 test('API failure produces an honest error, not fallback recommendations',async()=>{const original=globalThis.fetch;globalThis.fetch=async()=>new Response('rate limited',{status:429});try{const r=await qlooApi(request(),'test-key');assert.equal(r.status,502);const d=await r.json();assert.match(d.error,/busy/);assert(!d.directions)}finally{globalThis.fetch=original}});
+
+test('room briefs survive every direction, veto revision and download without reaching Qloo',async()=>{
+ const original=globalThis.fetch;
+ globalThis.fetch=async(url)=>{assert(!String(url).includes('oak'));assert(!String(url).includes('pets'));return Response.json({results:{entities:[entity(ids[2],'Shared'),entity(ids[0],'Alternative')]}})};
+ try {
+  const {downloadPlan}=await import('../lib/room-brief.ts');
+  for(const room of ['Living room','Bedroom','Dining room','Home office']) for(const unit of ['ft','m']) {
+   const brief={room,dimensions:{unit,length:5,width:4},keep:'oak table',needs:'pets; clear walking routes'};
+   for(const vetoes of [[],[ids[2]]]) {
+    const r=await qlooApi(request({...brief,vetoes,budget:1701,focus:'Room refresh'}),'test-key');assert.equal(r.status,200);const d=await r.json();
+    assert.deepEqual(d.brief,brief);assert(d.directions.every(x=>x.brief.keep==='oak table'));assert(d.directions.every(x=>!vetoes.includes(x.id)));
+    assert(d.plan.every(x=>x.detail.includes('oak table')&&x.detail.includes('pets')&&x.detail.includes(room)));
+    const text=downloadPlan(d,0);for(const value of [room,'oak table','pets','1701','height: not supplied',unit]) assert(text.includes(value));
+   }
+  }
+  const d=await (await qlooApi(request(),'test-key')).json();assert.equal(d.brief.room,'Living room');assert.equal(d.brief.dimensions.length,undefined);
+ } finally {globalThis.fetch=original}
+});
+test('invalid room constraints are rejected before fetching recommendations',async()=>{
+ const original=globalThis.fetch;globalThis.fetch=async()=>{throw Error('must not call Qloo')};
+ try {for(const input of [{room:'Kitchen'},{dimensions:{unit:'yards'}},{dimensions:{unit:'ft',length:-1}},{dimensions:{unit:'m',width:101}},{dimensions:{unit:'ft',height:null}},{dimensions:{unit:'m',length:'5'}},{keep:'a'.repeat(1001)},{needs:[]}]) assert.equal((await qlooApi(request(input),'test-key')).status,400)}finally{globalThis.fetch=original}
+});
