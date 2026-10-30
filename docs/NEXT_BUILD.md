@@ -1,5 +1,7 @@
 # HomeTaste — next-build brief
 
+> **Status, October 30, 2026:** Sections 1–3 below are implemented in the current app (room selection, units and measurements, optional interview, retained items, composed concept boards, combinable revisions, vetoes, plan preview/print). The usability pass added the three-step journey, stable direction selection, edited-brief/outdated-plan states, stale-response protection, and keyword-based household-needs effects. Photo support (4) is not implemented. Statements below about features "not existing" describe the October 28 prototype; see README for current behavior.
+
 Updated October 28, 2026 after Mo tested the first prototype.
 
 ## Product intent

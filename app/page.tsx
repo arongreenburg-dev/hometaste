@@ -1,33 +1,328 @@
 'use client';
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import PlanPreview from './PlanPreview';
 import {demoHouseholds} from '../lib/demo-households';
-import type {Revision} from '../lib/design-agent';
-import {rooms, briefSummary} from '../lib/room-brief';
-import {ArrowUpRight,ArrowRight,Check,Plus,X,House,SlidersHorizontal,RefreshCw,ChevronDown,Sparkles,Heart} from 'lucide-react';
-type Ref={id:string;name:string;type:string;tags?:string[]};
-const defaults:Ref[]=[{id:'E12201A5-CC50-40AF-97AE-C54A2CA303F7',name:'Muji',type:'brand'},{id:'18D4B0BC-4E4F-4563-809C-1A4B0AC9D39C',name:'West Elm',type:'brand'}];
-function Room({colors=['#c8bca6','#ede5d7','#7e8b77','#f7f2e9'],small=false}:{colors?:string[];small?:boolean}){return <svg className={small?'room small':'room'} viewBox="0 0 640 470" role="img" aria-label="Illustrated living room with a sofa, floor lamp, art, and natural colors"><defs><linearGradient id={'wall'+colors[0].slice(1)} x2="0" y2="1"><stop stopColor={colors[3]}/><stop offset="1" stopColor={colors[1]}/></linearGradient></defs><path d="M0 0h640v470H0z" fill={colors[3]}/><path d="M0 340h640v130H0z" fill={colors[0]} opacity=".4"/><path d="M490 0v340M0 340h640" stroke={colors[0]} strokeWidth="2" opacity=".5"/><path d="M40 32h150v233H40z" fill="#fffaf1"/><path d="M45 35h140v225H45z" fill="#d9dfd1"/><path d="M112 35v225M45 140h140" stroke={colors[3]} strokeWidth="7"/><path d="M40 265l176 75h240L185 140v125z" fill="#fffaf1" opacity=".3"/><ellipse cx="329" cy="409" rx="242" ry="38" fill={colors[1]}/><rect x="239" y="61" width="118" height="146" fill={colors[0]}/><rect x="247" y="69" width="102" height="130" fill={colors[3]}/><path d="M261 176q5-93 50-86q43 13 13 86" fill={colors[2]}/><circle cx="289" cy="117" r="17" fill={colors[0]}/><path d="M147 311q0-51 35-51h211q32 0 32 51v67H147z" fill={colors[2]}/><rect x="162" y="298" width="249" height="62" rx="14" fill={colors[2]}/><rect x="133" y="317" width="35" height="68" rx="12" fill={colors[2]}/><rect x="399" y="317" width="35" height="68" rx="12" fill={colors[2]}/><path d="M158 385v20m251-20v20" stroke="#545246" strokeWidth="7"/><path d="M191 282l40 3l-2 44l-43-5z" fill={colors[1]}/><path d="M349 286l37-6l9 43l-39 7z" fill={colors[0]}/><ellipse cx="300" cy="387" rx="75" ry="20" fill="#756048"/><path d="M251 391l-8 49m107-49l8 49" stroke="#756048" strokeWidth="7"/><ellipse cx="301" cy="384" rx="75" ry="18" fill={colors[0]}/><path d="M473 370V180" stroke="#655d4e" strokeWidth="5"/><path d="M440 181l11-63h45l12 63z" fill={colors[1]} stroke={colors[0]}/><ellipse cx="473" cy="374" rx="26" ry="5" fill="#655d4e"/><path d="M548 336v-90m0 40q-49-42-33-68q34 2 33 68m0-17q42-48 48-23q5 27-48 23" fill={colors[2]} stroke={colors[2]} strokeWidth="4"/><path d="M523 329h51l-7 50h-37z" fill={colors[0]}/></svg>}
-function TastePerson({person,index,onChange}:{person:any;index:number;onChange:(p:any)=>void}){
- const [query,setQuery]=useState('');const [results,setResults]=useState<Ref[]>([]);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
- async function search(){setBusy(true);setError('');setResults([]);try{const r=await fetch('/api/search?q='+encodeURIComponent(query));const d:any=await r.json();if(!r.ok)throw Error(d.error);setResults(d.results);if(!d.results.length)setError('No matches. Try a specific brand, artist, movie, or book.');}catch(e:any){setError(e.message)}finally{setBusy(false)}}
- return <div className="person"><div className="person-heading"><span className={'avatar a'+index}>{index===0?'01':'02'}</span><input aria-label={'Person '+(index+1)+' name'} maxLength={40} value={person.name} onChange={e=>onChange({...person,name:e.target.value})}/><span className="muted">Their taste</span></div><div className="refs">{person.entities.map((e:Ref)=><span className="chip" key={e.id}>{e.name}<button aria-label={'Remove '+e.name} onClick={()=>onChange({...person,entities:person.entities.filter((x:Ref)=>x.id!==e.id)})}><X size={12}/></button></span>)}</div>{person.entities.length<3&&<div className="search"><input aria-label={'Search taste references for '+person.name} placeholder="A brand, artist, movie you love…" value={query} maxLength={100} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();search()}}}/><button disabled={busy||query.trim().length<2} onClick={search} aria-label="Search">{busy?'…':<Plus size={18}/>}</button></div>}{error&&<p className="field-error">{error}</p>}{results.length>0&&<div className="search-results">{results.map(r=><button key={r.id} onClick={()=>{if(!person.entities.some((e:Ref)=>e.id===r.id))onChange({...person,entities:[...person.entities,r].slice(0,3)});setResults([]);setQuery('')}}><strong>{r.name}</strong><small>{r.type}</small></button>)}</div>}</div>
-}
-function ItemSketch({role,color}:{role:string;color:string}) {return <svg viewBox="0 0 180 120" role="img" aria-label={role+' concept illustration'}><rect width="180" height="120" fill="#f3f0e8"/>{/Light|Main|Layer/.test(role)?<><path d="M65 50l9-27h32l9 27z" fill={color}/><path d="M90 50v45m-21 0h42" stroke="#6c6658" strokeWidth="4"/></>:/Texture/.test(role)?<><path d="M40 28h100l-9 65H32z" fill={color}/><path d="M40 43h96M37 61h96M35 79h96" stroke="#faf6ec" strokeWidth="3"/></>:<><rect x="50" y="45" width="80" height="47" rx="9" fill={color}/><path d="M64 45q25-29 51 0" fill="none" stroke="#766b59" strokeWidth="4"/></>}</svg>}
-export default function Home(){
- const [revision,setRevision]=useState<Revision>('original');const [demo,setDemo]=useState('');
- const [room,setRoom]=useState('Living room');const [unit,setUnit]=useState<'ft'|'m'>('ft');const [dimensions,setDimensions]=useState({length:'',width:'',height:''});const [keep,setKeep]=useState('');const [needs,setNeeds]=useState('');const [interview,setInterview]=useState(false);
- const [people,setPeople]=useState([{name:'Alex',entities:[defaults[0]]},{name:'Jordan',entities:[defaults[1]]}]);const [budget,setBudget]=useState(1500);const [focus,setFocus]=useState('Room refresh');const [data,setData]=useState<any>(null);const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [selected,setSelected]=useState(0);const [vetoes,setVetoes]=useState<string[]>([]);const [saved,setSaved]=useState(false);
- async function generate(nextVetoes:string[]=vetoes,nextRevision:Revision=revision){setBusy(true);setError('');setSaved(false);try{const r=await fetch('/api/plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({people,budget,focus,room,revision:nextRevision,dimensions:{unit,...Object.fromEntries(Object.entries(dimensions).filter(([,v])=>v!=='').map(([k,v])=>[k,Number(v)]))},keep,needs,vetoes:nextVetoes})});const d:any=await r.json();if(!r.ok)throw Error(d.error);setData(d);setSelected(0);setRevision(nextRevision);setVetoes(nextVetoes);setTimeout(()=>document.getElementById('directions')?.scrollIntoView({behavior:'smooth',block:'start'}),100)}catch(e:any){setError(e.message)}finally{setBusy(false)}}
- function loadDemo(id:string){const d=demoHouseholds.find(x=>x.id===id);if(!d)return;setPeople(JSON.parse(JSON.stringify(d.people)));setRoom(d.room);setUnit('ft');setDimensions({...d.dimensions});setKeep(d.keep);setNeeds(d.needs);setBudget(d.budget);setFocus(d.focus);setInterview(false);setVetoes([]);setRevision('original');setData(null);setError('');setSaved(false);setDemo(d.label);document.getElementById('brief')?.scrollIntoView({behavior:'smooth'});}
- const concept=data?.directions[selected]?.concept;
- const activeSteps=concept?[{title:'Agree on the composition',amount:0,detail:concept.rationale},...concept.items.map((i:any)=>({title:i.name,amount:i.amount,detail:i.detail})),{title:'Keep a contingency',amount:concept.contingency,detail:'Unspent allowance for tax, shipping, samples, or a change of direction. No retailer prices have been checked.'}]:data?.plan||[];
+import {preferences as allPreferences, preferenceLabels, type Preference} from '../lib/design-agent';
+import {rooms} from '../lib/room-brief';
+import {BUDGET_MAX, BUDGET_MIN, briefChanged, briefKey, convertDimensions, createRequestGuard, describeConceptChanges, dimensionError, planRequest, resolveSelection, togglePreference, validateBudget, type BriefForm, type DimensionText, type Person, type PlanRequest, type Ref, type Unit} from '../lib/plan-state';
+import {ArrowUpRight, ArrowRight, Check, X, House, SlidersHorizontal, RefreshCw, ChevronDown, Heart, Search, RotateCcw, Printer, TriangleAlert, Undo2, Sofa, BedDouble, UtensilsCrossed, Monitor} from 'lucide-react';
 
- return <><header className="nav"><a className="wordmark" href="/"><span className="brand-icon"><House size={19} strokeWidth={1.5}/></span>HomeTaste<span className="beta">BETA</span></a><a href="#how">How it works <ArrowUpRight size={14}/></a></header><main><section className="hero"><div className="hero-copy"><p className="eyebrow"><span/> A LITTLE MORE YOU. A LITTLE MORE US.</p><h1>Different tastes.<br/>One <em>happy home.</em></h1><p className="intro">Turn the things you both love into a room you can agree on. Find your common ground before you buy a thing.</p><a className="text-link" href="#brief">Let’s find your direction <ArrowRight size={17}/></a><div className="hero-note"><span className="tiny-avatars">A<span>J</span></span><p>Two perspectives.<br/><strong>A place that feels like both of you.</strong></p></div></div><div className="hero-art"><Room/><span className="art-label">YOUR NEXT CHAPTER, AT HOME</span><div className="floating-note"><span><Check size={14}/></span> A little common ground goes a long way.</div></div></section><section className="demo-panel" aria-label="Try a fictional household"><div><p className="eyebrow">TRY IT WITHOUT PERSONAL DATA</p><h2>Start with a sample household.</h2><p>Fictional people and rooms. Real taste references and live Qloo recommendations.</p></div><div className="demo-options">{demoHouseholds.map(d=><button disabled={busy} key={d.id} onClick={()=>loadDemo(d.id)}><strong>{d.label} <ArrowUpRight size={14}/></strong><span>{d.description}</span></button>)}</div>{demo&&<p role="status">Loaded: {demo}. Review the inputs below, then choose Find our common ground.</p>}</section><section className="workspace" id="brief"><div className="section-heading"><div><p className="eyebrow">01 / THE STARTING POINT</p><h2>Make room for both of you.</h2></div><p>A few favorites. A shared budget.<br/>We’ll connect the dots.</p></div><div className="brief-grid"><div className="taste-box"><div className="box-label"><Heart size={16}/><h3>What feels like you?</h3></div><p className="helper">Start with our example, or add up to three favorites each.</p><div className="people">{people.map((person,i)=><TastePerson key={i} person={person} index={i} onChange={p=>{const ps=[...people];ps[i]=p;setPeople(ps);setData(null);setVetoes([])}}/>)}</div><p className="footnote">Favorite brands, music, films, and books can all be taste signals.</p></div><div className="room-box"><div className="box-label"><SlidersHorizontal size={16}/><h3>Your room, your rules.</h3></div><label>THE SPACE<select value={room} onChange={e=>{setRoom(e.target.value);setData(null)}}>{rooms.map(r=><option key={r}>{r}</option>)}</select></label>
- <fieldset className="measurements"><legend>Optional room dimensions</legend><label>Units<select value={unit} onChange={e=>{const next=e.target.value as 'ft'|'m';setDimensions(Object.fromEntries(Object.entries(dimensions).map(([k,v])=>[k,v===''?'':String(Number((Number(v)*(next==='m'?0.3048:1/0.3048)).toFixed(4)))])) as typeof dimensions);setUnit(next);setData(null)}}><option value="ft">Feet</option><option value="m">Meters</option></select></label><div className="dimension-fields">{(['length','width','height'] as const).map(axis=><label key={axis}>{axis} ({unit})<input type="number" min="0.01" max={unit==='ft'?300:100} step="any" value={dimensions[axis]} onChange={e=>{setDimensions({...dimensions,[axis]:e.target.value});setData(null)}}/></label>)}</div><p className="helper">Leave unknown measurements blank. We cannot confirm furniture fit from these alone.</p></fieldset>
- <label>EXISTING FURNITURE TO KEEP<textarea maxLength={1000} value={keep} placeholder="Optional — our blue sofa, oak table…" onChange={e=>{setKeep(e.target.value);setData(null)}}/></label>
- <button className="secondary" aria-expanded={interview} onClick={()=>setInterview(!interview)}>{interview?'Close interview':'Optional household interview'}</button>
- {interview&&<div className="interview"><p>What does your household need from this {room.toLowerCase()}?</p><label>Household needs<textarea maxLength={1000} value={needs} placeholder="Children, pets, accessibility, storage, work or rest needs…" onChange={e=>{setNeeds(e.target.value);setData(null)}}/></label><p className="helper">Optional. Your answers and other inputs stay when you skip or go back.</p><button className="secondary" onClick={()=>setInterview(false)}>Skip interview</button><button className="secondary" onClick={()=>setInterview(false)}>Done — back to quick start</button></div>}<label>WHAT WOULD YOU LIKE TO CHANGE?<select value={focus} onChange={e=>{setFocus(e.target.value);setData(null)}}><option>Room refresh</option><option>Lighting</option></select></label><label htmlFor="budget">YOUR TOTAL BUDGET <strong className="budget-value">${budget.toLocaleString()}</strong></label><input id="budget" type="range" min="100" max="10000" step="100" value={budget} onChange={e=>{setBudget(Number(e.target.value));setData(null)}}/><div className="range-labels"><span>$100</span><span>$10,000</span></div><button className="primary" disabled={busy||people.some(p=>!p.entities.length)} onClick={()=>generate([],'original')}>{busy?<><RefreshCw size={17} className="spin"/> Finding your common ground…</>:<>Find our common ground <ArrowRight size={17}/></>}</button><p className="under-button">Real taste signals from Qloo. Your preferences stay in this session.</p>{error&&<p role="alert" className="error">{error}</p>}</div></div></section>
- {data&&<section id="directions" className="results"><div className="section-heading"><div><p className="eyebrow">02 / YOUR POSSIBLE DIRECTIONS</p><h2>{data.brief.room} directions.</h2></div><span className="live-badge"><span/> Live Qloo results</span></div><p className="result-intro">{briefSummary(data.brief)}</p><p className="helper">Illustrations show a generic living room, not your measured space.</p><p className="result-intro">Explore brand aesthetics together. These are starting points for discussion; product prices and local availability have not been checked.</p>{!data.directions.length?<p className="error">No directions remain. Try other taste references or reset your vetoes.</p>:<>{!data.directions.some((d:any)=>d.ranks.every(Boolean))&&<p className="overlap-note">No shared brand appeared in these top-20 lists. These directions represent different sides of your household; use the aesthetic tags to find a compromise.</p>}<div className="direction-grid">{data.directions.map((d:any,i:number)=><article key={d.id} className={'direction '+(selected===i?'chosen':'')}><button className="select-direction" onClick={()=>{setSelected(i);setSaved(false)}} aria-pressed={selected===i}><div className="direction-art"><Room small colors={d.palette}/><span className="option-label">{i===0?(d.ranks.every(Boolean)?'BEST SHARED RANKING':'TOP DISCOVERY'):'ANOTHER POSSIBILITY'}</span></div><div className="direction-body"><span className="number">DIRECTION 0{i+1}</span><h3>{d.name}<span className="radio">{selected===i&&<Check size={12}/>}</span></h3><p className="direction-title">{d.title}</p><div className="palette">{d.palette.map((c:string)=><span key={c} style={{background:c}}/>)}</div><p className="why">{d.why}</p></div></button><details><summary>Why this direction? <ChevronDown size={14}/></summary><p>{d.description}</p><div className="tags">{d.tags.map((t:string)=><span key={t}>{t}</span>)}</div><p>{d.tradeoff}</p></details><button className="veto" disabled={busy} onClick={()=>generate([...vetoes,d.id])}><X size={13}/> Doesn’t feel like us — find another</button></article>)}</div>{concept&&<section className="composition" aria-label="Your room composition"><div className="section-heading"><div><p className="eyebrow">A COORDINATED STARTING POINT</p><h2>{data.brief.room}: {concept.style} direction.</h2></div></div><p className="helper">{concept.label}. The sketches illustrate item types; they are not shoppable products.</p><p>{concept.rationale}</p><div className="item-board">{concept.items.map((item:any,i:number)=><article key={item.name}><ItemSketch role={item.role} color={concept.palette[i]}/><small>{item.role}</small><h3>{item.name}</h3><p>{item.detail}</p><strong>${item.amount.toLocaleString()} allowance</strong></article>)}</div><div className="preserve"><strong>Keep these constraints</strong>{concept.constraints.map((c:string)=><p key={c}>{c}</p>)}</div><div className="revision"><h3>Make it work better for us.</h3><div>{([{id:'warmer',label:'Warmer finishes'},{id:'less-spend',label:'Spend about 25% less'},{id:'easy-care',label:'Easier to clean'},{id:'original',label:'Original brief'}] as const).map(r=><button className="secondary" key={r.id} disabled={busy} aria-pressed={revision===r.id} onClick={()=>generate(vetoes,r.id)}>{r.label}</button>)}</div><p role="status">{concept.changes.join(' ')} Retained furniture and your budget ceiling stay in place.</p></div><details className="method"><summary>Planning steps and Qloo evidence <ChevronDown size={15}/></summary>{data.agentTrace.map((t:any,i:number)=><p key={t.step}><strong>{i+1}. {t.step}:</strong> {t.detail}</p>)}<p>Controlled example: change a taste reference to test Qloo's contribution. Revision buttons apply explicit HomeTaste rules; no LLM is used.</p></details></section>}<div className="plan"><div className="plan-intro"><p className="eyebrow">03 / START SMALL</p><h2>Your next moves.</h2><p>A practical {data.brief.room.toLowerCase()} {data.focus.toLowerCase()} inspired by <strong>{data.directions[selected]?.name}</strong>. Keep your existing furniture and test small changes first.</p><p className="allowance">Planning allowances only.<br/>No product prices or stock verified.</p><button className="secondary" onClick={()=>setSaved(true)}>View / print plan <ArrowUpRight size={16}/></button></div><ol>{activeSteps.map((p:any,i:number)=><li key={p.title}><span className="step">0{i+1}</span><div><h4>{p.title}</h4><p>{p.detail}</p></div><strong>{p.amount?'$'+p.amount.toLocaleString():'Together'}</strong></li>)}</ol></div><details className="method"><summary>See what Qloo contributed <ChevronDown size={15}/></summary><p>{data.method}</p><p>Returned {data.counts[0]} brands for {data.people[0]} and {data.counts[1]} for {data.people[1]}. Palettes are illustrative and are not product images. Generated {new Date(data.generatedAt).toLocaleString()}.</p></details></> }</section>}
- <section className="how" id="how"><div><p className="eyebrow">LESS SECOND-GUESSING. MORE COMMON GROUND.</p><h2>A shared home starts<br/>with a little understanding.</h2></div><div className="how-steps"><p><span>01</span><strong>Bring your favorites.</strong> A few things each of you loves.</p><p><span>02</span><strong>Discover the overlap.</strong> Qloo connects taste to home brands.</p><p><span>03</span><strong>Choose a direction together.</strong> Compare, veto, and make a plan.</p></div></section></main><footer><a className="wordmark" href="/">HomeTaste</a><p>Made for the space you share.</p><span>Taste intelligence by <strong>Qloo</strong></span></footer>{saved&&data?.directions[selected]&&<PlanPreview data={data} selected={selected} onClose={()=>setSaved(false)}/>}</>
+const defaults: Ref[] = [{id: 'E12201A5-CC50-40AF-97AE-C54A2CA303F7', name: 'Muji', type: 'brand'}, {id: '18D4B0BC-4E4F-4563-809C-1A4B0AC9D39C', name: 'West Elm', type: 'brand'}];
+const blankDimensions: DimensionText = {length: '', width: '', height: ''};
+
+// Hero illustration only: a generic living room, never used to depict a result.
+function Room({colors = ['#c8bca6', '#ede5d7', '#7e8b77', '#f7f2e9']}: {colors?: string[]}) {return <svg className="room" viewBox="0 0 640 470" role="img" aria-label="Illustrated living room with a sofa, floor lamp, art, and natural colors"><defs><linearGradient id={'wall' + colors[0].slice(1)} x2="0" y2="1"><stop stopColor={colors[3]}/><stop offset="1" stopColor={colors[1]}/></linearGradient></defs><path d="M0 0h640v470H0z" fill={colors[3]}/><path d="M0 340h640v130H0z" fill={colors[0]} opacity=".4"/><path d="M490 0v340M0 340h640" stroke={colors[0]} strokeWidth="2" opacity=".5"/><path d="M40 32h150v233H40z" fill="#fffaf1"/><path d="M45 35h140v225H45z" fill="#d9dfd1"/><path d="M112 35v225M45 140h140" stroke={colors[3]} strokeWidth="7"/><path d="M40 265l176 75h240L185 140v125z" fill="#fffaf1" opacity=".3"/><ellipse cx="329" cy="409" rx="242" ry="38" fill={colors[1]}/><rect x="239" y="61" width="118" height="146" fill={colors[0]}/><rect x="247" y="69" width="102" height="130" fill={colors[3]}/><path d="M261 176q5-93 50-86q43 13 13 86" fill={colors[2]}/><circle cx="289" cy="117" r="17" fill={colors[0]}/><path d="M147 311q0-51 35-51h211q32 0 32 51v67H147z" fill={colors[2]}/><rect x="162" y="298" width="249" height="62" rx="14" fill={colors[2]}/><rect x="133" y="317" width="35" height="68" rx="12" fill={colors[2]}/><rect x="399" y="317" width="35" height="68" rx="12" fill={colors[2]}/><path d="M158 385v20m251-20v20" stroke="#545246" strokeWidth="7"/><path d="M191 282l40 3l-2 44l-43-5z" fill={colors[1]}/><path d="M349 286l37-6l9 43l-39 7z" fill={colors[0]}/><ellipse cx="300" cy="387" rx="75" ry="20" fill="#756048"/><path d="M251 391l-8 49m107-49l8 49" stroke="#756048" strokeWidth="7"/><ellipse cx="301" cy="384" rx="75" ry="18" fill={colors[0]}/><path d="M473 370V180" stroke="#655d4e" strokeWidth="5"/><path d="M440 181l11-63h45l12 63z" fill={colors[1]} stroke={colors[0]}/><ellipse cx="473" cy="374" rx="26" ry="5" fill="#655d4e"/><path d="M548 336v-90m0 40q-49-42-33-68q34 2 33 68m0-17q42-48 48-23q5 27-48 23" fill={colors[2]} stroke={colors[2]} strokeWidth="4"/><path d="M523 329h51l-7 50h-37z" fill={colors[0]}/></svg>}
+
+const roomIcons: Record<string, typeof Sofa> = {'Living room': Sofa, Bedroom: BedDouble, 'Dining room': UtensilsCrossed, 'Home office': Monitor};
+
+// Palette and material board: an abstract composition of the direction's colors and finish character, not a room reconstruction.
+function MaterialBoard({palette, style, room}: {palette: string[]; style: string; room: string}) {
+ const Icon = roomIcons[room] || Sofa;
+ const [main, mid, accent, ground] = palette;
+ return <div className="material-board">
+  <svg viewBox="0 0 320 180" role="img" aria-label={`Illustrative ${style} palette and material board for a ${room.toLowerCase()}; not a picture of your room or of products`}>
+   <rect width="320" height="180" fill={ground}/>
+   <rect x="16" y="16" width="150" height="148" rx="4" fill={main}/>
+   {style === 'natural' && <path d="M24 40q60 12 134 0M24 70q60 14 134 0M24 100q60 10 134 0M24 130q60 14 134 0" stroke={ground} strokeOpacity=".45" strokeWidth="2" fill="none"/>}
+   {style === 'expressive' && <path d="M40 164v-58a51 51 0 0 1 102 0v58z" fill={accent} opacity=".85"/>}
+   {style === 'streamlined' && <path d="M16 64h150M16 112h150M90 16v148" stroke={ground} strokeOpacity=".5" strokeWidth="1.5"/>}
+   <rect x="178" y="16" width="126" height="70" rx="4" fill={mid}/>
+   <path d="M178 40h126M178 62h126" stroke={ground} strokeOpacity=".5" strokeWidth={style === 'natural' ? 3 : 1}/>
+   <circle cx="214" cy="126" r="36" fill={accent}/>
+   <rect x="262" y="96" width="42" height="68" rx={style === 'expressive' ? 21 : 4} fill={main} stroke={accent} strokeWidth="2"/>
+  </svg>
+  <span className="board-room"><Icon size={14} aria-hidden="true"/> {room} · palette board</span>
+ </div>;
+}
+
+function TastePerson({person, index, onChange}: {person: Person; index: number; onChange: (p: Person) => void}) {
+ const [query, setQuery] = useState('');
+ const [results, setResults] = useState<Ref[]>([]);
+ const [busy, setBusy] = useState(false);
+ const [error, setError] = useState('');
+ const [status, setStatus] = useState('');
+ const guard = useRef(createRequestGuard());
+ const input = useRef<HTMLInputElement>(null);
+ const label = person.name.trim() || `Person ${index + 1}`;
+ const full = person.entities.length >= 3;
+ async function search() {
+  const q = query.trim();
+  if (q.length < 2) return;
+  const request = guard.current.start();
+  setBusy(true); setError(''); setStatus('');
+  try {
+   const r = await fetch('/api/search?q=' + encodeURIComponent(q));
+   const d: any = await r.json();
+   if (!request.isCurrent()) return;
+   if (!r.ok) throw Error(d.error || 'Search failed. Please try again.');
+   setResults(d.results);
+   if (!d.results.length) setError(`No matches for “${q}”. Try a specific brand, artist, film, or book title.`);
+  } catch (e: any) {
+   if (request.isCurrent()) setError(e.message || 'Search failed. Check your connection and try again.');
+  } finally {
+   if (request.isCurrent()) setBusy(false);
+  }
+ }
+ function add(r: Ref) {
+  if (!person.entities.some(e => e.id === r.id)) onChange({...person, entities: [...person.entities, r].slice(0, 3)});
+  setStatus(`Added ${r.name} to ${label}’s taste.`);
+  setResults([]); setQuery('');
+  input.current?.focus();
+ }
+ return <div className="person">
+  <div className="person-heading"><span className={'avatar a' + index}>{index === 0 ? '01' : '02'}</span><label className="name-field"><span className="sr-only">Person {index + 1} name</span><input maxLength={40} value={person.name} onChange={e => onChange({...person, name: e.target.value})}/></label><span className="muted">{person.entities.length}/3 favorites</span></div>
+  <ul className="refs" aria-label={`${label}’s taste references`}>
+   {person.entities.map(e => <li className="chip" key={e.id}><span>{e.name}<small>{e.type.replace(/_/g, ' ')}</small></span><button type="button" aria-label={`Remove ${e.name} from ${label}`} onClick={() => {onChange({...person, entities: person.entities.filter(x => x.id !== e.id)}); setStatus(`Removed ${e.name}.`);}}><X size={14}/></button></li>)}
+   {!person.entities.length && <li className="empty-ref">Add at least one favorite for {label}.</li>}
+  </ul>
+  {full ? <p className="helper tight">Three favorites chosen. Remove one to add another.</p> :
+   <form className="search" role="search" onSubmit={e => {e.preventDefault(); search();}}>
+    <label className="sr-only" htmlFor={`search-${index}`}>Search taste references for {label}</label>
+    <input id={`search-${index}`} ref={input} placeholder="Search a brand, artist, film, or book" value={query} maxLength={100} onChange={e => {setQuery(e.target.value); setError('');}}/>
+    <button type="submit" disabled={busy || query.trim().length < 2}>{busy ? <RefreshCw size={15} className="spin" aria-hidden="true"/> : <Search size={15} aria-hidden="true"/>}{busy ? 'Searching…' : 'Search'}</button>
+   </form>}
+  {error && <p className="field-error" role="alert">{error}</p>}
+  <p className="sr-only" role="status">{busy ? 'Searching Qloo…' : status}</p>
+  {results.length > 0 && <div className="search-results" aria-label={`Qloo matches for ${label}`}>
+   {results.map(r => {const added = person.entities.some(e => e.id === r.id); return <button type="button" key={r.id} disabled={added} onClick={() => add(r)}><strong>{r.name}</strong><small>{r.type.replace(/_/g, ' ')}</small><span className="pick">{added ? <><Check size={13}/> Added</> : 'Add'}</span></button>;})}
+   <button type="button" className="dismiss-results" onClick={() => setResults([])}>Close results</button>
+  </div>}
+ </div>;
+}
+
+function ItemSketch({role, color}: {role: string; color: string}) {return <svg viewBox="0 0 180 120" role="img" aria-label={role + ' item-type sketch, not a product image'}><rect width="180" height="120" fill="#f3f0e8"/>{/Light|Main|Layer/.test(role) ? <><path d="M65 50l9-27h32l9 27z" fill={color}/><path d="M90 50v45m-21 0h42" stroke="#6c6658" strokeWidth="4"/></> : /Texture/.test(role) ? <><path d="M40 28h100l-9 65H32z" fill={color}/><path d="M40 43h96M37 61h96M35 79h96" stroke="#faf6ec" strokeWidth="3"/></> : <><rect x="50" y="45" width="80" height="47" rx="9" fill={color}/><path d="M64 45q25-29 51 0" fill="none" stroke="#766b59" strokeWidth="4"/></>}</svg>}
+
+type Busy = null | 'new' | 'refine' | 'veto';
+type Attempt = {request: PlanRequest; kind: Exclude<Busy, null>};
+
+export default function Home() {
+ const [people, setPeople] = useState<Person[]>([{name: 'Alex', entities: [defaults[0]]}, {name: 'Jordan', entities: [defaults[1]]}]);
+ const [room, setRoom] = useState('Living room');
+ const [unit, setUnit] = useState<Unit>('ft');
+ const [dimensions, setDimensions] = useState<DimensionText>(blankDimensions);
+ const [keep, setKeep] = useState('');
+ const [needs, setNeeds] = useState('');
+ const [focus, setFocus] = useState('Room refresh');
+ const [budget, setBudget] = useState(1500);
+ const [budgetText, setBudgetText] = useState('1500');
+ const [interview, setInterview] = useState(false);
+ const [showMeasurements, setShowMeasurements] = useState(false);
+ const [demo, setDemo] = useState<{label: string; key: string} | null>(null);
+ const [data, setData] = useState<any>(null);
+ const [selectedId, setSelectedId] = useState<string | null>(null);
+ const [busy, setBusy] = useState<Busy>(null);
+ const [error, setError] = useState<{message: string; attempt: Attempt} | null>(null);
+ const [announcement, setAnnouncement] = useState('');
+ const [changeNotes, setChangeNotes] = useState<string[]>([]);
+ const [vetoNames, setVetoNames] = useState<Record<string, string>>({});
+ const [preview, setPreview] = useState(false);
+ const guard = useRef(createRequestGuard());
+ const controller = useRef<AbortController | null>(null);
+ const freshStart = useRef(false);
+ const previewOpener = useRef<HTMLElement | null>(null);
+
+ const form: BriefForm = {people, room, focus, budget, unit, dimensions, keep, needs};
+ const budgetCheck = validateBudget(budgetText);
+ const dimError = dimensionError(unit, dimensions);
+ const missingTaste = people.find(p => !p.entities.length);
+ const blocker = missingTaste ? `Add at least one favorite for ${missingTaste.name.trim() || 'each person'}.` : budgetCheck.error || dimError || '';
+ const applied: PlanRequest | undefined = data?.request;
+ const stale = briefChanged(form, applied);
+ const demoEdited = !!demo && briefKey(planRequest(form)) !== demo.key;
+ const directions: any[] = data?.directions ?? [];
+ const direction = directions.find(d => d.id === selectedId) ?? directions[0];
+ const concept = direction?.concept;
+ const activePrefs: Preference[] = applied?.preferences ?? [];
+ const step = !data ? 1 : 2;
+
+ useEffect(() => () => controller.current?.abort(), []);
+
+ async function run(attempt: Attempt) {
+  const request = guard.current.start();
+  controller.current?.abort();
+  const abort = new AbortController();
+  controller.current = abort;
+  setBusy(attempt.kind); setError(null);
+  setAnnouncement(attempt.kind === 'new' ? 'Finding your common ground with live Qloo results…' : 'Updating your plan…');
+  try {
+   const r = await fetch('/api/plan', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(attempt.request), signal: abort.signal});
+   const d: any = await r.json().catch(() => ({error: 'The server returned an unreadable response. Please try again.'}));
+   if (!request.isCurrent()) return;
+   if (!r.ok) throw Error(d.error || `Request failed (${r.status}). Please try again.`);
+   const firstResult = !data;
+   const {id, lost} = resolveSelection(selectedId, d.directions);
+   const previous = data?.directions.find((x: any) => x.id === id)?.concept;
+   const next = d.directions.find((x: any) => x.id === id)?.concept;
+   const notes = attempt.kind === 'refine' ? describeConceptChanges(previous, next) : [];
+   const lostName = lost && selectedId ? (vetoNames[selectedId] || data?.directions.find((x: any) => x.id === selectedId)?.name || 'Your previous direction') : '';
+   setData({...d, request: attempt.request});
+   setSelectedId(id);
+   setChangeNotes(notes);
+   setAnnouncement(
+    attempt.kind === 'refine' ? `Plan updated. ${next?.changes.join(' ') ?? ''}` :
+    lostName ? `${lostName} is no longer available, so ${d.directions[0]?.name ?? 'no direction'} is selected.` :
+    `${d.directions.length} directions ready.`);
+   if (firstResult || attempt.kind === 'veto' || lostName || attempt.kind === 'new') {
+    requestAnimationFrame(() => {
+     const heading = document.getElementById('directions-heading');
+     heading?.scrollIntoView({behavior: 'smooth', block: 'start'});
+     heading?.focus({preventScroll: true});
+    });
+   }
+  } catch (e: any) {
+   if (!request.isCurrent() || e?.name === 'AbortError') return;
+   setError({message: e?.message && e.message !== 'Failed to fetch' ? e.message : 'Could not reach HomeTaste. Check your connection and try again.', attempt});
+   setAnnouncement('');
+  } finally {
+   if (request.isCurrent()) setBusy(null);
+  }
+ }
+
+ function generateFromBrief() {
+  const keepRefinements = !freshStart.current;
+  freshStart.current = false;
+  run({kind: 'new', request: planRequest(form, keepRefinements ? applied?.preferences : [], keepRefinements ? applied?.vetoes : [])});
+ }
+ // Refinements apply to the plan on screen; edits to the brief wait for "Update plan".
+ function refine(prefs: Preference[]) { if (applied) run({kind: 'refine', request: {...applied, preferences: prefs}}); }
+ function veto(id: string, name: string) {
+  if (!applied) return;
+  setVetoNames(v => ({...v, [id]: name}));
+  run({kind: 'veto', request: {...applied, vetoes: [...applied.vetoes, id]}});
+ }
+ function restore(id: string) { if (applied) run({kind: 'veto', request: {...applied, vetoes: applied.vetoes.filter(v => v !== id)}}); }
+
+ function loadDemo(id: string) {
+  const d = demoHouseholds.find(x => x.id === id);
+  if (!d) return;
+  guard.current.invalidate(); controller.current?.abort(); setBusy(null); setError(null);
+  const next: BriefForm = {people: JSON.parse(JSON.stringify(d.people)), room: d.room, focus: d.focus, budget: d.budget, unit: 'ft', dimensions: {...d.dimensions}, keep: d.keep, needs: d.needs};
+  setPeople(next.people); setRoom(next.room); setFocus(next.focus); setBudget(next.budget); setBudgetText(String(next.budget));
+  setUnit('ft'); setDimensions(next.dimensions); setKeep(next.keep); setNeeds(next.needs); setInterview(!!next.needs); setShowMeasurements(true);
+  freshStart.current = true;
+  setDemo({label: d.label, key: briefKey(planRequest(next))});
+  requestAnimationFrame(() => document.getElementById('brief-heading')?.scrollIntoView({behavior: 'smooth', block: 'start'}));
+ }
+ function startOwn() {
+  guard.current.invalidate(); controller.current?.abort(); setBusy(null); setError(null);
+  setPeople([{name: 'Person 1', entities: []}, {name: 'Person 2', entities: []}]);
+  setRoom('Living room'); setFocus('Room refresh'); setUnit('ft'); setDimensions(blankDimensions); setKeep(''); setNeeds(''); setBudget(1500); setBudgetText('1500');
+  freshStart.current = true; setDemo(null);
+  requestAnimationFrame(() => document.getElementById('search-0')?.focus());
+ }
+
+ function openPreview(e: React.MouseEvent<HTMLElement>) { previewOpener.current = e.currentTarget; setPreview(true); }
+ function closePreview() { setPreview(false); requestAnimationFrame(() => previewOpener.current?.focus()); }
+
+ const updateLabel = !data ? 'Find our common ground' : stale ? 'Update plan with these changes' : 'Refresh live results';
+ const steps = [{href: '#brief', label: 'Your brief'}, {href: '#directions', label: 'Compare directions'}, {href: '#refine', label: 'Refine and keep your plan'}];
+ const money = (n: number) => '$' + n.toLocaleString();
+
+ return <>
+  <header className="nav"><a className="wordmark" href="/"><span className="brand-icon"><House size={19} strokeWidth={1.5}/></span>HomeTaste<span className="beta">BETA</span></a><a href="#how">How it works <ArrowUpRight size={14}/></a></header>
+  <nav className="stepper" aria-label="Your progress"><ol>{steps.map((s, i) => {
+   const n = i + 1; const available = n === 1 || !!data; const done = n === 1 && !!data;
+   return <li key={s.href} className={(done ? 'done ' : '') + (available ? '' : 'locked')}>{available ? <a href={s.href} aria-current={n === step ? 'step' : undefined}><span>{done ? <Check size={12}/> : n}</span>{s.label}</a> : <span aria-disabled="true"><span>{n}</span>{s.label}</span>}</li>;
+  })}</ol></nav>
+  <main>
+   <section className="hero"><div className="hero-copy"><p className="eyebrow"><span/> A LITTLE MORE YOU. A LITTLE MORE US.</p><h1>Different tastes.<br/>One <em>happy home.</em></h1><p className="intro">Turn the things you both love into a room you can agree on. Find your common ground before you buy a thing.</p><a className="text-link" href="#samples">Try a sample household <ArrowRight size={17}/></a><div className="hero-note"><span className="tiny-avatars">A<span>J</span></span><p>Two perspectives.<br/><strong>A place that feels like both of you.</strong></p></div></div><div className="hero-art"><Room/><span className="art-label">ILLUSTRATION</span><div className="floating-note"><span><Check size={14}/></span> A little common ground goes a long way.</div></div></section>
+
+   <section className="demo-panel" id="samples" aria-labelledby="samples-heading"><div><p className="eyebrow">TRY IT WITHOUT PERSONAL DATA</p><h2 id="samples-heading">Start with a sample household.</h2><p>Fictional people and rooms, real Qloo taste references, live recommendations. Or <button type="button" className="inline-link" onClick={startOwn}>start with your own household</button>.</p></div>
+    <div className="demo-options">{demoHouseholds.map(d => <button type="button" key={d.id} aria-pressed={demo?.label === d.label} onClick={() => loadDemo(d.id)}><strong>{d.label} {demo?.label === d.label ? <Check size={15}/> : <ArrowUpRight size={15}/>}</strong><span>{d.description}</span></button>)}</div>
+   </section>
+
+   <section className="workspace" id="brief" aria-labelledby="brief-heading">
+    <div className="section-heading"><div><p className="eyebrow">STEP 1 OF 3</p><h2 id="brief-heading">Your brief.</h2></div><p>A few favorites, the room, and a budget.<br/>Everything else is optional.</p></div>
+    {demo && <p className={'source-badge' + (demoEdited ? ' edited' : '')} role="status"><strong>{demoEdited ? 'Edited sample' : 'Sample household'}:</strong> {demo.label}. {demoEdited ? 'Your edits replace some fictional details.' : 'Fictional people and room — edit anything, then find your common ground.'}</p>}
+    <div className="brief-grid">
+     <div className="taste-box"><div className="box-label"><Heart size={16}/><h3>What feels like you?</h3></div><p className="helper">Up to three favorites each — brands, music, films, and books all work as taste signals.</p>
+      <div className="people">{people.map((person, i) => <TastePerson key={i} person={person} index={i} onChange={p => setPeople(ps => ps.map((x, j) => j === i ? p : x))}/>)}</div>
+     </div>
+     <div className="room-box"><div className="box-label"><SlidersHorizontal size={16}/><h3>Your room, your rules.</h3></div>
+      <div className="field-row">
+       <label>Room<select value={room} onChange={e => setRoom(e.target.value)}>{rooms.map(r => <option key={r}>{r}</option>)}</select></label>
+       <label>Goal<select value={focus} onChange={e => setFocus(e.target.value)}><option>Room refresh</option><option>Lighting</option></select></label>
+      </div>
+      <div className="budget-field">
+       <label htmlFor="budget-amount">Total budget</label>
+       <div className="budget-input"><span aria-hidden="true">$</span><input id="budget-amount" inputMode="numeric" aria-describedby="budget-help" aria-invalid={!!budgetCheck.error} value={budgetText} onChange={e => {setBudgetText(e.target.value); const v = validateBudget(e.target.value); if (v.value) setBudget(v.value);}} onBlur={() => {if (budgetCheck.value) setBudgetText(String(budgetCheck.value));}}/></div>
+       <input aria-label="Budget slider" type="range" min={BUDGET_MIN} max={10000} step={100} value={Math.min(budget, 10000)} onChange={e => {setBudget(Number(e.target.value)); setBudgetText(e.target.value);}}/>
+       <div className="range-labels" id="budget-help"><span>$100</span><span>Type up to $50,000</span></div>
+       {budgetCheck.error && <p className="field-error">{budgetCheck.error}</p>}
+      </div>
+      <label>Furniture to keep <span className="optional">optional</span><textarea maxLength={1000} value={keep} placeholder="e.g. our blue sofa, oak table" onChange={e => setKeep(e.target.value)}/></label>
+      <details className="optional-details" open={showMeasurements} onToggle={e => setShowMeasurements(e.currentTarget.open)}>
+       <summary>Room measurements <span className="optional">optional</span><ChevronDown size={15}/></summary>
+       <fieldset className="measurements"><legend className="sr-only">Room measurements</legend>
+        <label>Units<select value={unit} onChange={e => {const next = e.target.value as Unit; setDimensions(convertDimensions(dimensions, next)); setUnit(next);}}><option value="ft">Feet</option><option value="m">Meters</option></select></label>
+        <div className="dimension-fields">{(['length', 'width', 'height'] as const).map(axis => <label key={axis}>{axis} ({unit})<input type="number" inputMode="decimal" min="0.01" max={unit === 'ft' ? 300 : 100} step="any" value={dimensions[axis]} onChange={e => setDimensions({...dimensions, [axis]: e.target.value})}/></label>)}</div>
+        {dimError ? <p className="field-error">{dimError}</p> : <p className="helper tight">Leave unknowns blank. Measurements alone can’t confirm furniture fit.</p>}
+       </fieldset>
+      </details>
+      <button type="button" className="secondary interview-toggle" aria-expanded={interview} aria-controls="interview" onClick={() => setInterview(!interview)}>{interview ? 'Hide household needs' : needs ? 'Edit household needs' : 'Add household needs (optional interview)'}<ChevronDown size={15} className={interview ? 'flip' : ''}/></button>
+      {interview && <div className="interview" id="interview"><label>What does your household need from this {room.toLowerCase()}?<textarea maxLength={1000} value={needs} placeholder="Pets, children, reading, video calls, glare, clear paths, no large furniture…" onChange={e => setNeeds(e.target.value)}/></label><p className="helper tight">Optional — skip anytime; your answers stay. HomeTaste acts on pets/children, reading, glare, video calls, warm light, clear paths, and compact space. Other notes are kept but not interpreted.</p><button type="button" className="secondary" onClick={() => setInterview(false)}>Done</button></div>}
+      {data && stale && <p className="stale-note"><TriangleAlert size={15}/> Your brief changed since the plan below was made.</p>}
+      <button type="button" className="primary" disabled={!!busy || !!blocker} aria-describedby="primary-help" onClick={() => {if (!stale && data) document.getElementById('directions-heading')?.scrollIntoView({behavior: 'smooth'}); else generateFromBrief();}}>{busy === 'new' ? <><RefreshCw size={17} className="spin"/> Finding your common ground…</> : !stale && data ? <>See your directions <ArrowRight size={17}/></> : <>{updateLabel} <ArrowRight size={17}/></>}</button>
+      <p className="under-button" id="primary-help">{blocker || 'Live Qloo taste signals. Only taste-reference IDs are sent to Qloo; nothing is stored.'}</p>
+      {error && error.attempt.kind === 'new' && <div role="alert" className="error"><p>{error.message}{data ? ' Your previous plan is still shown below.' : ''}</p><button type="button" className="secondary" onClick={() => run(error.attempt)}><RotateCcw size={14}/> Try again</button></div>}
+     </div>
+    </div>
+   </section>
+
+   <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
+
+   {data && <section id="directions" className={'results' + (busy && busy !== 'new' ? ' updating' : '')} aria-labelledby="directions-heading" aria-busy={!!busy}>
+    <div className="section-heading"><div><p className="eyebrow">STEP 2 OF 3</p><h2 id="directions-heading" tabIndex={-1}>Compare {data.brief.room.toLowerCase()} directions.</h2></div><span className="live-badge"><span/> Live Qloo results · {data.counts[0]} + {data.counts[1]} brands</span></div>
+    {stale && <div className="stale-banner" role="status"><TriangleAlert size={18}/><div><strong>Inputs changed — update plan.</strong><p>These directions reflect your previous brief. Refinements below still apply to this version.</p></div><button type="button" className="primary compact" disabled={!!busy || !!blocker} onClick={generateFromBrief}>{busy === 'new' ? 'Updating…' : 'Update plan'}</button></div>}
+    {error && error.attempt.kind !== 'new' && <div role="alert" className="error"><p>{error.message} Your plan and selections are unchanged.</p><button type="button" className="secondary" onClick={() => run(error.attempt)}><RotateCcw size={14}/> Try again</button></div>}
+    <p className="result-intro">Pick the direction that feels most like both of you. Each card shows where the brand ranked in each person’s Qloo list.</p>
+    {!directions.length ? <p className="error">No directions remain. Restore a hidden brand below or try other taste references.</p> : <>
+     {!directions.some(d => d.ranks.every(Boolean)) && <p className="overlap-note">No brand appeared in both top-20 lists. These directions represent different sides of your household — use the tags to find a compromise.</p>}
+     <div className="direction-grid" role="radiogroup" aria-label="Directions">{directions.map((d, i) => {const chosen = d.id === direction?.id; return <article key={d.id} className={'direction ' + (chosen ? 'chosen' : '')}>
+      <button type="button" className="select-direction" role="radio" aria-checked={chosen} aria-labelledby={`dir-${d.id}`} aria-describedby={`why-${d.id}`} onClick={() => {setSelectedId(d.id); setChangeNotes([]);}}>
+       <div className="direction-art"><MaterialBoard palette={d.palette} style={d.concept.style} room={data.brief.room}/><span className="option-label">{i === 0 ? (d.ranks.every(Boolean) ? 'BEST SHARED RANKING' : 'TOP DISCOVERY') : 'ANOTHER POSSIBILITY'}</span></div>
+       <div className="direction-body"><span className="number">DIRECTION 0{i + 1} · {d.concept.style.toUpperCase()}</span><h3 id={`dir-${d.id}`}>{d.name}<span className="radio">{chosen && <Check size={12}/>}</span></h3><p className="direction-title">{d.title}</p><p className="why" id={`why-${d.id}`}>{d.why}</p></div>
+      </button>
+      <details><summary>Qloo tags and tradeoff <ChevronDown size={14}/></summary>{d.description && <p>{d.description}</p>}<div className="tags">{d.tags.map((t: string) => <span key={t}>{t}</span>)}</div><p>{d.tradeoff}</p></details>
+      <button type="button" className="veto" disabled={!!busy} onClick={() => veto(d.id, d.name)}><X size={14}/> Not us — hide this brand</button>
+     </article>;})}</div>
+    </>}
+    {!!applied?.vetoes.length && <div className="hidden-brands"><strong>Hidden brands:</strong>{applied.vetoes.map(id => <button type="button" key={id} className="chip-button" disabled={!!busy} onClick={() => restore(id)}><Undo2 size={13}/> {vetoNames[id] || 'Hidden brand'} — restore</button>)}</div>}
+
+    {concept && <section id="refine" className="composition" aria-labelledby="refine-heading">
+     <div className="section-heading"><div><p className="eyebrow">STEP 3 OF 3</p><h2 id="refine-heading">Refine and keep your plan: {direction.name}.</h2></div></div>
+     <p className="lead">{concept.rationale}</p>
+     <div className="revision"><h3>Make it work better for us.</h3><p className="helper tight">Combine as many as you like. Your room, kept furniture, needs, and budget ceiling stay in place.</p>
+      <div>{allPreferences.map(p => {const on = activePrefs.includes(p); return <button type="button" className="secondary toggle" key={p} disabled={!!busy} aria-pressed={on} onClick={() => refine(togglePreference(activePrefs, p))}>{on && <Check size={14}/>}{preferenceLabels[p]}</button>;})}
+       <button type="button" className="text-button" disabled={!!busy || !activePrefs.length} onClick={() => refine([])}><RotateCcw size={14}/> Reset to original brief</button></div>
+      <div className="change-log" aria-live="off">
+       <p><strong>Active:</strong> {activePrefs.length ? activePrefs.map(p => preferenceLabels[p]).join(' + ') : 'None — original brief'}{busy === 'refine' && <span className="updating-label"> · Updating…</span>}</p>
+       <ul>{concept.changes.map((c: string) => <li key={c}>{c}</li>)}</ul>
+       {changeNotes.length > 0 && <><p><strong>What changed just now:</strong></p><ul>{changeNotes.map(c => <li key={c}>{c}</li>)}</ul></>}
+      </div>
+     </div>
+     <div className="item-board">{concept.items.map((item: any, i: number) => <article key={item.role}><ItemSketch role={item.role} color={concept.palette[i]}/><small>{item.role}</small><h3>{item.name}</h3><p>{item.detail}</p><strong>{money(item.amount)} allowance</strong></article>)}</div>
+     <div className="plan-summary">
+      <div className="preserve"><strong>Kept in every revision</strong>{concept.constraints.map((c: string) => <p key={c}>{c}</p>)}
+       {concept.needsApplied.length > 0 ? <><strong>Household needs applied</strong><ul>{concept.needsApplied.map((n: string) => <li key={n}>{n}</li>)}</ul></> : data.brief.needs ? <p><em>No supported needs keywords matched; your notes are kept but not interpreted.</em></p> : null}
+      </div>
+      <div className="budget-table"><table><caption>Budget allowances</caption><tbody>{concept.items.map((item: any) => <tr key={item.role}><th scope="row">{item.name}</th><td>{money(item.amount)}</td></tr>)}<tr><th scope="row">Unspent contingency</th><td>{money(concept.contingency)}</td></tr></tbody><tfoot><tr><th scope="row">Budget ceiling</th><td>{money(data.budget)}</td></tr></tfoot></table>
+       <button type="button" className="primary" onClick={openPreview}><Printer size={16}/> View and print plan</button>
+       {stale && <p className="helper tight">This plan uses your previous brief; the printout will say so.</p>}
+      </div>
+     </div>
+     <details className="method"><summary>Limits, planning steps, and Qloo evidence <ChevronDown size={15}/></summary>
+      <p><strong>What this is:</strong> {concept.label}. Boards and sketches show palettes and item types, not your room or real products. Allowances are not retailer prices; stock and fit are not checked.</p>
+      <p>{data.method}</p>
+      {data.agentTrace.map((t: any, i: number) => <p key={t.step}><strong>{i + 1}. {t.step}:</strong> {t.detail}</p>)}
+      <p>Qloo returned {data.counts[0]} brands for {data.people[0]} and {data.counts[1]} for {data.people[1]}. Revisions apply explicit HomeTaste rules; no LLM is used. Generated {new Date(data.generatedAt).toLocaleString()}.</p>
+     </details>
+    </section>}
+   </section>}
+
+   <section className="how" id="how"><div><p className="eyebrow">LESS SECOND-GUESSING. MORE COMMON GROUND.</p><h2>A shared home starts<br/>with a little understanding.</h2></div><div className="how-steps"><p><span>01</span><strong>Bring your favorites.</strong> A few things each of you loves.</p><p><span>02</span><strong>Compare directions.</strong> Qloo connects each person’s taste to home brands; HomeTaste favors the overlap.</p><p><span>03</span><strong>Refine and keep your plan.</strong> Combine adjustments, hide brands, and print it.</p></div></section>
+  </main>
+  <footer><a className="wordmark" href="/">HomeTaste</a><p>Made for the space you share.</p><span>Taste intelligence by <strong>Qloo</strong></span></footer>
+  {preview && direction && <PlanPreview data={data} direction={direction} stale={stale} vetoNames={vetoNames} onClose={closePreview}/>}
+ </>;
 }
