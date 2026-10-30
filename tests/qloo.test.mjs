@@ -1,6 +1,7 @@
-import {test} from 'node:test';
+import {test,beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
-import {qlooApi} from '../lib/qloo.ts';
+import {qlooApi,clearQlooCache} from '../lib/qloo.ts';
+beforeEach(()=>clearQlooCache());
 const ids=['00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000003'];
 const people=ids.slice(0,2).map((id,i)=>({name:'Person '+i,entities:[{id}]}));
 const entity=(id,name)=>({entity_id:id,name,tags:[{type:'urn:tag:aesthetic_property:qloo',name:'Natural Materials'}],properties:{description:'Home goods brand'}});

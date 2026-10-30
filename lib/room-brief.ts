@@ -21,5 +21,6 @@ export function briefSummary(b: RoomBrief) {
 }
 export function downloadPlan(data: any, selected: number) {
  const direction = data.directions[selected];
- return `HomeTaste — ${data.brief.room}\n${direction.name}: ${direction.title}\n${direction.why}\n\n${briefSummary(data.brief)}\nGoal: ${data.focus}\nBudget: $${data.budget}\n\n${data.plan.map((p: any) => `${p.title}: $${p.amount}\n${p.detail}`).join('\n\n')}\n\n${data.method}`;
+ const c=direction.concept;const conceptText=c?`\nComposition: ${c.style}\n${c.rationale}\n${c.items.map((x:any)=>`${x.name}: $${x.amount} allowance — ${x.detail}`).join('\n')}\nUnspent contingency: $${c.contingency}\nRevision: ${c.changes.join(' ')}\n${c.constraints.join('\n')}\n${c.label}\n`:'';
+ return `HomeTaste — ${data.brief.room}\n${direction.name}: ${direction.title}\n${direction.why}\n${conceptText}\n${briefSummary(data.brief)}\nGoal: ${data.focus}\nBudget: $${data.budget}\n\n${(c?[]:data.plan).map((p: any) => `${p.title}: $${p.amount}\n${p.detail}`).join('\n\n')}\n\n${data.method}`;
 }
