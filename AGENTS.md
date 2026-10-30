@@ -18,7 +18,7 @@ Read `docs/NEXT_BUILD.md` before proposing or implementing the next product chan
 - Preserve household constraints, existing items, and vetoes when revising. New brand names alone are not a meaningful revision.
 - No affiliate, purchasing, retailer-account, construction-advice, or whole-house features in the current sprint.
 - Do not expose or commit keys, `.env*`, `.dev.vars*`, credentials, household photos, or raw Qloo response datasets. The API key is already stored in the deployed runtime; agents must obtain separate secure local configuration when needed.
-- Preserve current private deployment access. Do not make the repository or app public or create a replacement Site unless Mo explicitly requests it.
+- Mo authorized a public demo and public repository for the hackathon on October 29, 2026. Preserve server-side secrets and existing Site identity; do not create a replacement Site.
 
 ## Work and validation
 
