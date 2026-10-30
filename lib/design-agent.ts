@@ -5,7 +5,7 @@ export function composeConcept(tags:string[],brief:RoomBrief,budget:number,focus
  const signals=tags.join(' ').toLowerCase();
  const style=/eclectic|bold|vibrant|colorful/.test(signals)?'expressive':/natural|earth|warm|organic|wood/.test(signals)?'natural':'streamlined';
  const warm=revision==='warmer'||style==='natural';
- const palette=style==='expressive'?['#b75e48','#e4bb75','#394c53','#ece1d2']:warm?['#b4a17e','#d9cdb9','#707d66','#f2ede2']:['#b7b5af','#e5e0d6','#434c48','#d0bc9b'];
+ const palette=revision==='warmer'?['#bc9d76','#e8d5b7','#957455','#faf0dd']:style==='expressive'?['#b75e48','#e4bb75','#394c53','#ece1d2']:warm?['#b4a17e','#d9cdb9','#707d66','#f2ede2']:['#b7b5af','#e5e0d6','#434c48','#d0bc9b'];
  const cost=revision==='less-spend'?0.75:1;const spend=Math.floor(budget*cost);const reserve=budget-spend;
  const notes=(brief.needs+' '+brief.keep).toLowerCase();const easy=revision==='easy-care'||/dog|pet|child|wash|durab/.test(notes);
  const room=brief.room; const area=brief.dimensions.length&&brief.dimensions.width?brief.dimensions.length*brief.dimensions.width*(brief.dimensions.unit==='ft'?0.092903:1):undefined;const small=!!area&&area<12;
