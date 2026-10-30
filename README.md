@@ -17,7 +17,7 @@ Live demo: https://hometaste-household.arongreenburg.chatgpt.site
 3. Click **Find our common ground** for real Qloo recommendations.
 4. Select a direction and inspect its coordinated item brief and Qloo evidence.
 5. Click **Warmer finishes**, **Spend about 25% less**, or **Easier to clean**. Inspect the changes and preserved constraints.
-6. Veto a brand or change the taste reference to explore other results. Download the plan.
+6. Veto a brand or change the taste reference to explore other results. Choose **View / print plan**, then **Print / save as PDF** to keep a copy through your browser.
 
 All three sample households contain fictional people and room details. Their taste references are real Qloo entities. API results are live; samples do not contain canned recommendation responses.
 
@@ -27,7 +27,7 @@ All three sample households contain fictional people and room details. Their tas
 - Entity search with explicit selection; no invented Qloo IDs.
 - Separate real Qloo `/v2/insights` calls for each profile, restricted to the Home Goods tag.
 - Shared-list ranking, three aesthetic directions, explicit handling of missing overlap.
-- Four room types, optional measurements and household interview, retained furniture, brand vetoes, composed item-type boards, material revisions, exact budget allocations and downloadable plans.
+- Four room types, optional measurements and household interview, retained furniture, brand vetoes, composed item-type boards, material revisions, exact budget allocations and browser-readable plans with print / save-as-PDF support.
 - Qloo key stays in the Worker runtime. No credentials or Qloo response datasets are committed.
 
 ## Development
