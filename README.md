@@ -12,12 +12,13 @@ GitHub is the collaboration source. The deployed app currently uses a separate S
 
 Live demo: https://hometaste-household.arongreenburg.chatgpt.site
 
-1. Choose **Music meets modern** in the fictional-household panel.
-2. Review the bedroom, $800 lighting budget, retained bed/tables, and Bob Dylan / West Elm taste references.
-3. Click **Find our common ground** for real Qloo recommendations.
-4. Select a direction and inspect its coordinated item brief and Qloo evidence.
-5. Click **Warmer finishes**, **Spend about 25% less**, or **Easier to clean**. Inspect the changes and preserved constraints.
-6. Veto a brand or change the taste reference to explore other results. Choose **View / print plan**, then **Print / save as PDF** to keep a copy through your browser.
+1. Choose **Music meets modern** under *Start with a sample household*. The brief is marked as a fictional sample.
+2. Review the bedroom, $800 lighting budget, retained bed/tables, household needs, and Bob Dylan / West Elm taste references.
+3. Click **Find our common ground** for real Qloo recommendations (step 2, *Compare directions*).
+4. Select any direction. Its palette board, Qloo ranks, and tags appear on the card.
+5. In step 3, combine **Warmer finishes**, **Spend about 25% less**, and **Easier to clean**. The selected direction is kept; the active set, what changed, and an exact allowance table are shown. **Reset to original brief** clears them.
+6. Edit a measurement: the plan stays visible with an *Inputs changed — update plan* banner. Choose **Update plan**.
+7. Hide a brand with **Not us — hide this brand** (restore it from *Hidden brands*). Choose **View and print plan**, then **Print / save as PDF**.
 
 All three sample households contain fictional people and room details. Their taste references are real Qloo entities. API results are live; samples do not contain canned recommendation responses.
 
@@ -27,7 +28,9 @@ All three sample households contain fictional people and room details. Their tas
 - Entity search with explicit selection; no invented Qloo IDs.
 - Separate real Qloo `/v2/insights` calls for each profile, restricted to the Home Goods tag.
 - Shared-list ranking, three aesthetic directions, explicit handling of missing overlap.
-- Four room types, optional measurements and household interview, retained furniture, brand vetoes, composed item-type boards, material revisions, exact budget allocations and browser-readable plans with print / save-as-PDF support.
+- Four room types, optional measurements and household interview, retained furniture, brand vetoes with restore, composed item-type boards, combinable revisions, exact budget allocations, and a browser plan preview with print / save-as-PDF.
+- Three-step journey (Your brief → Compare directions → Refine and keep your plan). The last generated plan stays visible while the brief is edited; outdated plans are flagged on screen and in print. Only the newest request may update the page; errors keep the previous plan and offer a retry.
+- Household needs are read with a small, explicit keyword set (pets/children/washable, reading, glare, video calls, warm/calm light, clear paths/access, no large furniture) that changes item guidance. Other notes are kept in the brief but not interpreted, and the UI says so.
 - Qloo key stays in the Worker runtime. No credentials or Qloo response datasets are committed.
 
 ## Development
@@ -44,7 +47,9 @@ The supplied Sites build integration and `.openai/hosting.json` handle deploymen
 
 Qloo supplies each person's recommended brands and their aesthetic tags. HomeTaste ranks the union with `sum(1 / (20 + rank))`, adding 0.015 when the brand appears in both lists. This is an explicit heuristic, not a calibrated household compatibility probability. Unreturned means outside the selected top-20 list, not dislike.
 
-Palettes use a small deterministic mapping from Qloo tags (natural/warm, bold/colorful, or neutral). The same room illustration is recolored; it is not a generated room or product photo. Planning steps and budget allocations are HomeTaste rules. Selecting a brand changes the aesthetic brief, not verified shopping inventory.
+Palettes use a small deterministic mapping from Qloo tags (natural/warm, bold/colorful, or neutral). Each direction shows an abstract palette and material board labeled with the selected room type; it is not a generated room, a reconstruction of your space, or a product photo. The hero illustration is decorative. Planning steps and budget allocations are HomeTaste rules. Selecting a brand changes the aesthetic brief, not verified shopping inventory.
+
+The plan API accepts `preferences` (any combination of `warmer`, `less-spend`, `easy-care`); the older single `revision` field is still accepted.
 
 ## Validation and limitations
 

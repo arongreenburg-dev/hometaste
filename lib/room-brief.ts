@@ -17,7 +17,7 @@ export function parseBrief(input: any): RoomBrief {
 }
 export function briefSummary(b: RoomBrief) {
  const measurements = (['length','width','height'] as const).map(k => `${k}: ${b.dimensions[k] === undefined ? 'not supplied' : b.dimensions[k] + ' ' + b.dimensions.unit}`).join(', ');
- return `${b.room}. Measurements — ${measurements}. Keep: ${b.keep || 'no specific items supplied'}. Household needs: ${b.needs || 'not supplied'}.`;
+ return `${b.room}. Measurements — ${measurements}. Keep: ${b.keep.replace(/[.\s]+$/, '') || 'no specific items supplied'}. Household needs: ${b.needs.replace(/[.\s]+$/, '') || 'not supplied'}.`;
 }
 export function downloadPlan(data: any, selected: number) {
  const direction = data.directions[selected];
