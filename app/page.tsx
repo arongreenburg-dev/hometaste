@@ -78,7 +78,7 @@ function TastePerson({person, index, onChange}: {person: Person; index: number; 
   {full ? <p className="helper tight">Three favorites chosen. Remove one to add another.</p> :
    <form className="search" role="search" onSubmit={e => {e.preventDefault(); search();}}>
     <label className="sr-only" htmlFor={`search-${index}`}>Search taste references for {label}</label>
-    <input id={`search-${index}`} ref={input} placeholder="Search a brand, artist, film, or book" value={query} maxLength={100} onChange={e => {setQuery(e.target.value); setError('');}}/>
+    <input id={`search-${index}`} ref={input} placeholder="Search a brand, artist, film, or book" value={query} maxLength={100} onChange={e => {guard.current.invalidate(); setBusy(false); setResults([]); setQuery(e.target.value); setError('');}}/>
     <button type="submit" disabled={busy || query.trim().length < 2}>{busy ? <RefreshCw size={15} className="spin" aria-hidden="true"/> : <Search size={15} aria-hidden="true"/>}{busy ? 'Searching…' : 'Search'}</button>
    </form>}
   {error && <p className="field-error" role="alert">{error}</p>}
@@ -96,6 +96,7 @@ type Busy = null | 'new' | 'refine' | 'veto';
 type Attempt = {request: PlanRequest; kind: Exclude<Busy, null>};
 
 export default function Home() {
+ const [searchEpoch, setSearchEpoch] = useState(0);
  const [people, setPeople] = useState<Person[]>([{name: 'Alex', entities: [defaults[0]]}, {name: 'Jordan', entities: [defaults[1]]}]);
  const [room, setRoom] = useState('Living room');
  const [unit, setUnit] = useState<Unit>('ft');
@@ -127,7 +128,7 @@ export default function Home() {
  const missingTaste = people.find(p => !p.entities.length);
  const blocker = missingTaste ? `Add at least one favorite for ${missingTaste.name.trim() || 'each person'}.` : budgetCheck.error || dimError || '';
  const applied: PlanRequest | undefined = data?.request;
- const stale = briefChanged(form, applied);
+ const stale = briefChanged(form, applied) || (!!applied && !!budgetCheck.error);
  const demoEdited = !!demo && briefKey(planRequest(form)) !== demo.key;
  const directions: any[] = data?.directions ?? [];
  const direction = directions.find(d => d.id === selectedId) ?? directions[0];
@@ -195,7 +196,7 @@ export default function Home() {
  function loadDemo(id: string) {
   const d = demoHouseholds.find(x => x.id === id);
   if (!d) return;
-  guard.current.invalidate(); controller.current?.abort(); setBusy(null); setError(null);
+  guard.current.invalidate(); controller.current?.abort(); setBusy(null); setError(null); setSearchEpoch(v => v + 1);
   const next: BriefForm = {people: JSON.parse(JSON.stringify(d.people)), room: d.room, focus: d.focus, budget: d.budget, unit: 'ft', dimensions: {...d.dimensions}, keep: d.keep, needs: d.needs};
   setPeople(next.people); setRoom(next.room); setFocus(next.focus); setBudget(next.budget); setBudgetText(String(next.budget));
   setUnit('ft'); setDimensions(next.dimensions); setKeep(next.keep); setNeeds(next.needs); setInterview(!!next.needs); setShowMeasurements(true);
@@ -204,7 +205,7 @@ export default function Home() {
   requestAnimationFrame(() => document.getElementById('brief-heading')?.scrollIntoView({behavior: 'smooth', block: 'start'}));
  }
  function startOwn() {
-  guard.current.invalidate(); controller.current?.abort(); setBusy(null); setError(null);
+  guard.current.invalidate(); controller.current?.abort(); setBusy(null); setError(null); setSearchEpoch(v => v + 1);
   setPeople([{name: 'Person 1', entities: []}, {name: 'Person 2', entities: []}]);
   setRoom('Living room'); setFocus('Room refresh'); setUnit('ft'); setDimensions(blankDimensions); setKeep(''); setNeeds(''); setBudget(1500); setBudgetText('1500');
   freshStart.current = true; setDemo(null);
@@ -236,7 +237,7 @@ export default function Home() {
     {demo && <p className={'source-badge' + (demoEdited ? ' edited' : '')} role="status"><strong>{demoEdited ? 'Edited sample' : 'Sample household'}:</strong> {demo.label}. {demoEdited ? 'Your edits replace some fictional details.' : 'Fictional people and room — edit anything, then find your common ground.'}</p>}
     <div className="brief-grid">
      <div className="taste-box"><div className="box-label"><Heart size={16}/><h3>What feels like you?</h3></div><p className="helper">Up to three favorites each — brands, music, films, and books all work as taste signals.</p>
-      <div className="people">{people.map((person, i) => <TastePerson key={i} person={person} index={i} onChange={p => setPeople(ps => ps.map((x, j) => j === i ? p : x))}/>)}</div>
+      <div className="people">{people.map((person, i) => <TastePerson key={`${searchEpoch}-${i}`} person={person} index={i} onChange={p => setPeople(ps => ps.map((x, j) => j === i ? p : x))}/>)}</div>
      </div>
      <div className="room-box"><div className="box-label"><SlidersHorizontal size={16}/><h3>Your room, your rules.</h3></div>
       <div className="field-row">
@@ -279,7 +280,7 @@ export default function Home() {
     {!directions.length ? <p className="error">No directions remain. Restore a hidden brand below or try other taste references.</p> : <>
      {!directions.some(d => d.ranks.every(Boolean)) && <p className="overlap-note">No brand appeared in both top-20 lists. These directions represent different sides of your household — use the tags to find a compromise.</p>}
      <div className="direction-grid" role="radiogroup" aria-label="Directions">{directions.map((d, i) => {const chosen = d.id === direction?.id; return <article key={d.id} className={'direction ' + (chosen ? 'chosen' : '')}>
-      <button type="button" className="select-direction" role="radio" aria-checked={chosen} aria-labelledby={`dir-${d.id}`} aria-describedby={`why-${d.id}`} onClick={() => {setSelectedId(d.id); setChangeNotes([]);}}>
+      <button type="button" className="select-direction" disabled={!!busy} role="radio" aria-checked={chosen} aria-labelledby={`dir-${d.id}`} aria-describedby={`why-${d.id}`} onClick={() => {setSelectedId(d.id); setChangeNotes([]);}}>
        <div className="direction-art"><MaterialBoard palette={d.palette} style={d.concept.style} room={data.brief.room}/><span className="option-label">{i === 0 ? (d.ranks.every(Boolean) ? 'BEST SHARED RANKING' : 'TOP DISCOVERY') : 'ANOTHER POSSIBILITY'}</span></div>
        <div className="direction-body"><span className="number">DIRECTION 0{i + 1} · {d.concept.style.toUpperCase()}</span><h3 id={`dir-${d.id}`}>{d.name}<span className="radio">{chosen && <Check size={12}/>}</span></h3><p className="direction-title">{d.title}</p><p className="why" id={`why-${d.id}`}>{d.why}</p></div>
       </button>
